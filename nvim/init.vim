@@ -1,5 +1,8 @@
 let mapleader=" "
 
+" for some reasons polyglot is very slow. TODO: test it
+let g:polyglot_disabled = ['javascript.plugin', 'vue.plugin']
+
 if (empty($TMUX))
   if (has("nvim"))
     "For Neovim 0.1.3 and 0.1.4 < https://github.com/neovim/neovim/pull/2198 >
@@ -36,13 +39,16 @@ let g:VM_leader = "\\"
 " start insert mode with i,a,I,A
 
 call plug#begin()
+Plug 'tpope/vim-dispatch'
 Plug 'metakirby5/codi.vim'
 
 Plug 'thaerkh/vim-workspace'
 Plug 'MattesGroeger/vim-bookmarks'
 Plug 'mg979/vim-visual-multi', {'branch': 'master'}
 Plug 'machakann/vim-highlightedyank'
-Plug 'pslosiwka/vim-smoothie'
+" Plug 'psliwka/vim-smoothie'
+Plug 'chriskempson/base16-vim'
+
 
 " Smooth osscroll
 Plug 'tomtom/tcomment_vim'
@@ -51,6 +57,8 @@ Plug 'mhartington/nvim-typescript', {'do': './install.sh'}
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'tpope/vim-surround'
+" Plug 'jiangmiao/auto-pairs'
+
 " FuzzyFinder
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
@@ -61,6 +69,7 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}
 " Plug 'preservimsnerdtree'
 " Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'sheerun/vim-polyglot'
+" Plug 'jelera/vim-javascript-syntax'
 Plug 'scrooloose/nerdcommenter'
 " Plug 'Xuyuanp/nerdtree-git-plugin'
 " Git
@@ -76,11 +85,17 @@ Plug 'lambdalisue/nerdfont.vim'
 Plug 'sainnhe/edge'
 Plug 'AlessandroYorba/Sierra'
 Plug 'tomasiser/vim-code-dark'
-Plug 'cocopon/iceberg.vim'
 Plug 'scrooloose/syntastic'
+Plug 'rishikanthc/skyfall-vim'
 
+Plug 'vimwiki/vimwiki'
+Plug 'rainglow/vim'
+
+" neovim in browser
+" Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
 " Plug 'jiangmiao/auto-pairs'
 call plug#end()
+
 let g:highlightedyank_highlight_duration = 100
 
 let g:syntastic_rust_checkers = ['rustc']
@@ -91,9 +106,6 @@ let g:syntastic_rust_checkers = ['rustc']
 if (has("termguicolors"))
   set termguicolors
 endif
-
-highlight BookmarkSign ctermbg=NONE ctermfg=160
-highlight BookmarkLine ctermbg=194 ctermfg=NONE
 
 " Add/remove bookmark at current line	                mm
 " Add/edit/remove annotation at current line	        mi
@@ -109,13 +121,28 @@ highlight BookmarkLine ctermbg=194 ctermfg=NONE
 " Load bookmarks from a file                            :BookmarkLoad <FILE_PATH>
 let g:bookmark_sign = '♥'
 let g:bookmark_highlight_lines = 1
+let g:vimwiki_list = [{'path': '~/Dropbox/vimwiki/',
+                      \ 'syntax': 'markdown', 'ext': '.md'}]
 
 
-au Filetype rust set colorcolumn=100
-au FileType rust set shiftwidth=4
-au FileType rust set softtabstop=4
-au FileType rust set tabstop=4
-au FileType rust set expandtab
+
+
+" au Filetype rust set colorcolumn=100
+au FileType rust,vimwiki,markdown set shiftwidth=4
+au FileType rust,vimwiki,markdown set softtabstop=4
+au FileType rust,vimwiki,markdown set tabstop=4
+au FileType rust,vimwiki,markdown set expandtab
+
+au FileType python set shiftwidth=4
+au FileType python set softtabstop=4
+au FileType python set tabstop=4
+au FileType python set expandtab
+
+au FileType typescript,javascript set shiftwidth=4
+au FileType typescript,javascript set softtabstop=4
+au FileType typescript,javascript set tabstop=4
+au FileType typescript,javascript set expandtab
+" au Filetype vimwiki,markdown set colorcolumn=200
 
 set scrolloff=7
 set mouse=a
@@ -140,21 +167,23 @@ command! -nargs=* -bang Rg call RipgrepFzf(<q-args>, <bang>0)
 nnoremap <leader>f :Rg<CR>
 command! -nargs=* -bang Rgs call RipgrepFzf(<q-args>, <bang>1)
 
+" :Sw save file as root
+command! -nargs=0 Sw w !sudo tee % > /dev/null
+
+
 
 let g:workspace_autosave_always = 1
 let g:workspace_autosave = 0
 let g:workspace_autosave_ignore = ['gitcommit', 'node_modules']
+" Do not load workspace if explicit file provided
+let g:workspace_session_disable_on_args = 1
+
 let g:workspace_session_directory = $HOME . '/.vim/sessions/'
 
 set undodir=~/.config/nvim/undodir
 set undofile
 let g:workspace_persist_undo_history = 0  " enabled = 1 (default), disabled = 0
 let g:workspace_undodir='~/.config/nvim/undodir'
-
-
-
-" Need to close NERDTree before saving workspace or there will be troubles.
-" autocmd VimLeave * tabdo NERDTreeClose
 
 fun! <SID>StripTrailingWhitespaces()
     let l = line(".")
@@ -171,12 +200,18 @@ endfun
 
 autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
 
+" syntax highlighting for buku bookmark manager
+au! BufNewFile,BufRead *buku-edit* set filetype=markdown
+
+
 let g:term_buf = 0
 let g:term_win = 0
 
 autocmd FileType typescript,javascript,typescriptreact,javascriptreact,vue setlocal commentstring=//\ %s
 
 
+nmap <silent> <space>k :call CocAction('diagnosticNext')<CR>
+nmap <silent> <space>K :call CocAction('diagnosticPrevious')<CR>
 nmap <silent> gd :call CocActionAsync('jumpDefinition', 'drop')<CR>
 nmap <silent> FF :call CocActionAsync('format')<CR>
 nnoremap <leader> i :call CocActionAsync('codeAction', '', 'Implement missing members')<CR>
@@ -223,7 +258,18 @@ map <Leader>d :bd<cr>
 " list buffers
 map <Leader>i :ls<CR>:b
 
+let g:airline#extensions#tabline#buffer_nr_format = '%s '
+let g:airline#extensions#tabline#tab_nr_type= 1
+let g:airline#extensions#tabline#show_splits = 0
+
+let g:airline_left_sep = ''
+let g:airline_left_alt_sep = ''
+let g:airline_right_alt_sep = ''
+let g:airline_right_sep = ''
+
 let g:airline_powerline_fonts = 1
+let g:airline#extensions#tabline#fnamemod = ':t'
+
 " Enable caching of syntax highlighting groups
 let g:airline_highlighting_cache = 2
 let g:airline#extensions#tabline#buffer_idx_mode = 0
@@ -233,6 +279,10 @@ let g:airline#extensions#tabline#buffer_nr_show = 1
 let g:airline#extensions#hunks#enabled=1
 let g:airline#extensions#branch#enabled=0
 let g:airline#parts#ffenc#skip_expected_string='utf-8[unix]'
+let g:airline_skip_empty_sections = 1
+
+let g:airline_section_a = airline#section#create(['mode', 'crypt', 'paste', 'spell', 'iminsert'])
+
 let g:airline#extensions#tabline#enabled = 1
 let g:airline_theme = 'onedark'
 let s:tabline = [ [ 'none', 'none' ] ]
@@ -247,7 +297,7 @@ function! s:show_documentation()
 endfunction
 set hidden
 set cmdheight=1
-set updatetime=175
+set updatetime=250
 set shortmess+=c
 
 inoremap <silent><expr> <TAB>
@@ -332,15 +382,24 @@ cnoremap $d <CR>:d<CR>``
 syntax on
 set t_Co=256
 
+
+set background=dark
+let base16colorspace=256
 colorscheme onedark
-"vscode theme
-"colorscheme codedark
+" set cursorline
+" colorscheme rainbow
+" colorscheme codedark
+" colorscheme base16-default-dark
+" colorscheme base16-tomorrow-night-eighties
+" colorscheme skyfall
+
 
 highlight default link CocErrorSign CocDiffDelete
 highlight CocErrorHighlight cterm=underline ctermfg=254 ctermbg=88 guifg=#eeeeee guibg=#FF005F gui=underline guisp=#FF0086
 highlight CocWarningHighlight cterm=underline gui=underline guibg=#603020 guisp=#FF0086
 highlight CocInfoHighlight cterm=undercurl gui=underline guisp=#3777E6
-highlight CocHintHighlight cterm=undercurl ctermbg=14 guibg=#00ffff gui=underline guisp=#1FAAAA
+highlight CocHintHighlight cterm=undercurl gui=underline guisp=#3777E6
+" highlight CocHintHighlight cterm=undercurl ctermbg=14 guibg=#00ffff gui=underline guisp=#1FAAAA
 highlight CocHighlightRead ctermbg=238 ctermfg=250 guibg=#444444 guifg=#bcbcbc guisp=#FF0086
 highlight CocHighlightText ctermbg=198 ctermfg=197 guibg=#444444 guifg=#888888 guisp=#FF0086
 highlight CocHighlightWrite ctermbg=238 ctermfg=250 guibg=#444444 guifg=#bcbcbc guisp=#FF0086
@@ -355,15 +414,31 @@ highlight TabLineFill ctermfg=LightGreen ctermbg=DarkGreen
 highlight TabLine ctermfg=Blue ctermbg=Yellow
 highlight TabLineSel ctermfg=Red ctermbg=Yellow
 highlight Title ctermfg=LightBlue ctermbg=Magenta
-highlight ColorColumn guibg=#282d34
+" highlight ColorColumn guibg=#282d34
+
+highlight BookmarkSign ctermbg=NONE ctermfg=160
+highlight BookmarkLine ctermbg=194 ctermfg=NONE
+" highlight BookmarkSign guibg=#282828 ctermbg=NONE ctermfg=160
+" highlight BookmarkLine guibg=#282828 ctermbg=194 ctermfg=NONE
+set guicursor=n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50
+    \,sm:block-blinkwait175-blinkoff150-blinkon175
+highlight Cursor guifg=#000001 guibg=#cccccc
+highlight Cursor2 guifg=#000000 guibg=#cccccc
+highlight lCursor guifg=NONE guibg=#603020
 
 " set cursorline
 
-imap jj <Esc>
+" imap jj <Esc>
 
 "set clipboard=unnamed
 set clipboard=
 
+function ClearRegs() abort
+  let regs=split('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-"', '\zs')
+  for r in regs
+    call setreg(r, @_)
+  endfor
+endfunction
 
 function! LightlineCurrentDirectory(n) abort
   " return fnamemodify(getcwd(tabpagewinnr(a:n), a:n), ':h:t') . '/' . @%
@@ -436,7 +511,7 @@ set lazyredraw
 " show hidden characters
 set listchars=nbsp:¬,extends:»,precedes:«,trail:•
 
-set colorcolumn=100
+" set colorcolumn=100
 
 " Jump to start and end of line using the home row keys
 map H ^
@@ -447,6 +522,12 @@ autocmd FileType json
     \ autocmd BufEnter * silent set conceallevel=0
 " autocmd FileType rust
 "     \ autocmd BufWritePre * silent call CocActionAsync('format')
+
+set keymap=russian-jcukenwin
+set iminsert=0
+set imsearch=0
+" hi Cursor       guifg=black     ctermfg=0   guibg=#4e9a06   ctermbg=10
+
 
 map ё `
 map й q
@@ -461,6 +542,7 @@ map щ o
 map з p
 map х [
 map ъ ]
+map ф a
 map ф a
 map ы s
 map в d
